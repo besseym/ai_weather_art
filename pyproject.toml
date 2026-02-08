@@ -1,8 +1,23 @@
 [project]
 name = "ai-weather-art"
 version = "0.1.0"
-description = "Add your description here"
+description = "AI agent that generates p5.js art based on real-time weather conditions"
 requires-python = ">=3.14"
 dependencies = [
     "flask>=3.1.2",
+    "strands-agents[ollama]",
+    "requests",
+    "pydantic",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests requiring external services",
 ]
