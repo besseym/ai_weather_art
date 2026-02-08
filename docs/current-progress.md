@@ -1,7 +1,7 @@
 # Current Development Progress
 
 **Last updated:** 2026-02-08
-**Current branch:** `phase4`
+**Current branch:** `phase5`
 
 ## Completed Phases
 
@@ -32,28 +32,29 @@
 - `extract_json_from_response()` — strips markdown fences before parsing
 - `tests/test_agent.py` — 10 tests (JSON extraction variants, schema tool output, generate_scene with city/coords/style/retry)
 
+### Phase 5 - Web UI & Flask Routes (commit `31686d7`)
+- `weather_art/routes.py` — Flask Blueprint with 3 endpoints:
+  - `GET /` — serves `index.html` template
+  - `POST /api/generate` — accepts `{location, latitude, longitude, style_prompt}`, calls `generate_scene()`, returns scene JSON
+  - `GET /api/geocode?city=` — geocodes a city name via `geocode_city()`, returns coordinates
+- `app.py` — updated to load `.env` via `python-dotenv` and register the blueprint
+- `templates/index.html` — Bootstrap 5 dark theme (`data-bs-theme="dark"`) single-page UI with location input + geolocate button, optional style prompt, generate button, `spinner-border` loading state, `alert` for errors, `card` with p5.js canvas container and metadata footer
+- `static/js/app.js` — browser geolocation handling, POST to `/api/generate`, passes response to `WeatherArtRenderer.render()`, manages loading/error UI states
+- `static/css/style.css` — minimal overrides for canvas container sizing
+- `tests/conftest.py` — shared fixtures: Flask test client, sample scene/geocode/weather data
+- `tests/test_routes.py` — 10 tests (index HTML, generate with city/coords/style, missing body/location, agent error, geocode success/missing param/not found)
+
 ## Test Suite Status
 
-26 tests, all passing:
+36 tests, all passing:
 ```
 uv run pytest tests/ -v
 ```
 
-## Next Up: Phase 5 - Web UI & Flask Routes
+## Next Up: Phase 6 - Polish & Testing
 
-Files to create/modify:
-- `weather_art/routes.py` — Flask Blueprint: `GET /`, `POST /api/generate`, `GET /api/geocode?city=`
-- `app.py` — modify to register blueprint, add `load_dotenv()`
-- `templates/index.html` — Bootstrap 5 dark theme UI with location input, style prompt, generate button, p5.js canvas, loading spinner, error alerts
-- `static/js/app.js` — geolocation, API calls, renderer integration
-- `static/css/style.css` — minimal custom overrides
-- `tests/test_routes.py` — Flask test client tests
-
-## Then: Phase 6 - Polish & Testing
-
-- `tests/conftest.py` — shared fixtures
 - Docker healthcheck refinements
 - Full coverage run: `uv run pytest tests/ -v --cov=weather_art`
 - End-to-end browser test via `docker compose up --build`
 
-Note: Phase 6 retry logic and unknown element type handling are already implemented (retry in `agent.py`, console warning in `renderer.js`).
+Note: Several Phase 6 items are already implemented: retry logic (`agent.py`), unknown element type handling (`renderer.js`), shared test fixtures (`conftest.py`), and pytest markers (`pyproject.toml`).
