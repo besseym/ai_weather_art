@@ -1,7 +1,7 @@
 # Current Development Progress
 
 **Last updated:** 2026-02-08
-**Current branch:** `phase5`
+**Current branch:** `phase6`
 
 ## Completed Phases
 
@@ -44,17 +44,39 @@
 - `tests/conftest.py` — shared fixtures: Flask test client, sample scene/geocode/weather data
 - `tests/test_routes.py` — 10 tests (index HTML, generate with city/coords/style, missing body/location, agent error, geocode success/missing param/not found)
 
+### Phase 6 - Polish & Testing (commit `3308599`)
+- `docker-compose.yml` — added healthcheck for the `web` service (polls `http://localhost:5000/` every 30s, 3 retries, 10s start period); `depends_on` updated to use `condition: service_started`
+- `.dockerignore` — refined to exclude `.pytest_cache`, `*.pyc`, `docs/`, `tests/`, `.gitignore` for leaner Docker images
+- Items already completed in earlier phases: retry logic on JSON parse failure (`agent.py`, Phase 4), unknown element type handling with console warning (`renderer.js`, Phase 3), shared test fixtures (`conftest.py`, Phase 5), pytest `integration` marker (`pyproject.toml`, Phase 1)
+
 ## Test Suite Status
 
-36 tests, all passing:
+36 tests, all passing, 97% coverage:
 ```
-uv run pytest tests/ -v
+uv run pytest tests/ -v --cov=weather_art
 ```
 
-## Next Up: Phase 6 - Polish & Testing
+Coverage breakdown:
+| Module | Coverage |
+|--------|----------|
+| `config.py` | 100% |
+| `geocoding.py` | 100% |
+| `weather.py` | 100% |
+| `scene_schema.py` | 100% |
+| `agent.py` | 92% |
+| `routes.py` | 91% |
+| **Total** | **97%** |
 
-- Docker healthcheck refinements
-- Full coverage run: `uv run pytest tests/ -v --cov=weather_art`
-- End-to-end browser test via `docker compose up --build`
+Uncovered lines are error paths requiring a live Ollama instance (agent retry failure, catch-all route exceptions).
 
-Note: Several Phase 6 items are already implemented: retry logic (`agent.py`), unknown element type handling (`renderer.js`), shared test fixtures (`conftest.py`), and pytest markers (`pyproject.toml`).
+## All Phases Complete
+
+To run locally:
+```
+uv run flask --app app run --debug
+```
+
+To run with Docker:
+```
+docker compose up --build
+```
