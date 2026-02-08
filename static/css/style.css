@@ -1,0 +1,12 @@
+#canvas-container {
+  min-height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#canvas-container canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
