@@ -7,6 +7,7 @@ from weather_art.agent import (
     extract_json_from_response,
     generate_scene,
     get_scene_format,
+    validate_scene,
 )
 
 
@@ -111,18 +112,24 @@ class TestGenerateScene:
         call_args = mock_agent_instance.call_args[0][0]
         assert "watercolor" in call_args
 
-    @patch("weather_art.agent.OllamaModel")
-    @patch("weather_art.agent.Agent")
-    def test_generate_scene_retry_on_bad_json(self, MockAgent, MockModel):
-        mock_agent_instance = MagicMock()
-        bad_result = Mock()
-        bad_result.__str__ = Mock(return_value="Here is your scene: not json")
-        good_result = Mock()
-        good_result.__str__ = Mock(return_value=VALID_SCENE_JSON)
-        mock_agent_instance.side_effect = [bad_result, good_result]
-        MockAgent.return_value = mock_agent_instance
+class TestValidateScene:
+    def test_validate_scene_success(self):
+        result = validate_scene(VALID_SCENE_JSON)
+        assert result["status"] == "success"
+        parsed = json.loads(result["content"][0]["text"])
+        assert parsed["scene"]["metadata"]["title"] == "Sunny Day"
 
-        scene = generate_scene("Berlin")
+    def test_validate_scene_invalid_json(self):
+        result = validate_scene("not json at all")
+        assert result["status"] == "error"
+        assert "Validation failed" in result["content"][0]["text"]
 
-        assert scene["scene"]["metadata"]["title"] == "Sunny Day"
-        assert mock_agent_instance.call_count == 2
+    def test_validate_scene_bad_schema(self):
+        result = validate_scene('{"scene": {"layers": [{"id": "x", "elements": [{"type": "bogus"}]}]}}')
+        assert result["status"] == "error"
+        assert "Validation failed" in result["content"][0]["text"]
+
+    def test_validate_scene_strips_fences(self):
+        fenced = f"```json\n{VALID_SCENE_JSON}\n```"
+        result = validate_scene(fenced)
+        assert result["status"] == "success"

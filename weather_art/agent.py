@@ -134,6 +134,34 @@ Use 2-4 layers to organize the scene (e.g. sky, weather_effects, ground, foregro
     return {"status": "success", "content": [{"text": guide}]}
 
 
+@tool
+def validate_scene(scene_json: str) -> dict:
+    """Validate a scene JSON string against the schema.
+
+    Call this tool with your generated scene JSON to check it is valid before
+    returning it as your final answer. If validation fails, the error message
+    will tell you what to fix.
+
+    Args:
+        scene_json: The complete scene JSON string to validate.
+
+    Returns:
+        Validation result: success with the validated JSON, or error with details.
+    """
+    try:
+        raw = extract_json_from_response(scene_json)
+        validated = SceneResponse.model_validate(raw)
+        return {
+            "status": "success",
+            "content": [{"text": json.dumps(validated.model_dump())}],
+        }
+    except (json.JSONDecodeError, Exception) as e:
+        return {
+            "status": "error",
+            "content": [{"text": f"Validation failed: {e}. Please fix and try again."}],
+        }
+
+
 SYSTEM_PROMPT = """\
 You are a weather artist AI. Given a location (and optionally coordinates and a style prompt), \
 you must fetch the real weather and produce a JSON object describing a p5.js scene that \
@@ -144,8 +172,9 @@ artistically represents the current weather conditions.
 2. If only a city name is given, call geocode_location to get coordinates.
 3. Call get_weather with the latitude and longitude.
 4. Based on the weather data and the scene format reference, produce the scene JSON.
+5. Call validate_scene with your JSON to verify it is valid. If it fails, fix the errors and validate again.
 
-Return ONLY valid JSON as your final answer — no markdown fences, no explanation text.
+Return ONLY the validated JSON as your final answer — no markdown fences, no explanation text.
 """
 
 
@@ -177,7 +206,7 @@ def generate_scene(
     agent = Agent(
         model=model,
         system_prompt=SYSTEM_PROMPT,
-        tools=[geocode_location, get_weather, get_scene_format],
+        tools=[geocode_location, get_weather, get_scene_format, validate_scene],
     )
 
     if latitude is not None and longitude is not None:
@@ -194,23 +223,6 @@ def generate_scene(
     result = agent(user_message)
     response_text = str(result)
 
-    scene_data = _parse_with_retry(agent, response_text)
-    return scene_data
-
-
-def _parse_with_retry(agent: Agent, response_text: str) -> dict:
-    """Parse scene JSON from response, retrying once on failure."""
-    try:
-        raw = extract_json_from_response(response_text)
-        validated = SceneResponse.model_validate(raw)
-        return validated.model_dump()
-    except (json.JSONDecodeError, Exception) as first_error:
-        retry_result = agent(
-            "Your previous response was not valid JSON. "
-            "Please return ONLY the scene JSON object, with no markdown fences or extra text. "
-            f"Error: {first_error}"
-        )
-        retry_text = str(retry_result)
-        raw = extract_json_from_response(retry_text)
-        validated = SceneResponse.model_validate(raw)
-        return validated.model_dump()
+    raw = extract_json_from_response(response_text)
+    validated = SceneResponse.model_validate(raw)
+    return validated.model_dump()
