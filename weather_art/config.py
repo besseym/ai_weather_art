@@ -1,7 +1,7 @@
 import os
 
-OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-OLLAMA_MODEL_ID = os.environ.get("OLLAMA_MODEL_ID", "llama3.1")
+OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://192.168.86.143:41969")
+OLLAMA_MODEL_ID = os.environ.get("OLLAMA_MODEL_ID", "llama3.2")
 
 OPEN_METEO_GEOCODING_URL = os.environ.get(
     "OPEN_METEO_GEOCODING_URL", "https://geocoding-api.open-meteo.com/v1/search"
