@@ -1,7 +1,7 @@
 # Current Development Progress
 
 **Last updated:** 2026-02-08
-**Current branch:** `phase7`
+**Current branch:** `phase8`
 
 ## Completed Phases
 
@@ -17,20 +17,21 @@
 - `tests/test_geocoding.py` — 3 tests (success, not found, empty results)
 - `tests/test_weather.py` — 4 tests (success, night, unknown code, WMO coverage)
 
-### Phase 3 - Scene Schema & Renderer (commit `880f7af`)
-- `weather_art/scene_schema.py` — Pydantic models with discriminated unions for 2 background types and 9 element types (`circle`, `ellipse`, `rect`, `line`, `triangle`, `arc`, `text`, `particle_system`, `glow`), plus `Canvas`, `Layer`, `Metadata`, `Scene`, `SceneResponse`
-- `static/js/renderer.js` — `WeatherArtRenderer` class (p5.js instance mode) handling all element types, gradient backgrounds, particle systems with edge wrapping, glow via layered circles
-- `tests/test_scene_schema.py` — 9 tests (valid full/minimal scenes, solid/gradient bg, all element types, defaults, rejection of invalid input)
+### Phase 3 - Scene Schema & Renderer (commit `880f7af`, simplified in `e78ff62`)
+- `weather_art/scene_schema.py` — Pydantic models with discriminated unions for 2 background types and 6 element types (`ellipse`, `rect`, `line`, `text`, `particle_system`, `glow`), plus `Canvas`, `Metadata`, `Scene`, `SceneResponse`. Flat `elements[]` list (no layers). `ParticleSystem` uses preset-based config (rain, snow, fog, dust, stars) with `model_validator` to auto-fill complex params.
+- `static/js/renderer.js` — `WeatherArtRenderer` class (p5.js instance mode) handling all 6 element types, gradient backgrounds, particle systems with edge wrapping, glow via layered circles
+- `tests/unit/test_scene_schema.py` — 14 tests (valid full/minimal scenes, solid/gradient bg, all element types, preset tests for rain/snow/stars/overrides, ellipse-as-circle, removed types rejected)
 
-### Phase 4 - AI Agent (commit `fdd6601`)
-- `weather_art/agent.py` — Strands agent with 3 `@tool` functions:
+### Phase 4 - AI Agent (commit `fdd6601`, refactored in `6552edf` & `e78ff62`)
+- `weather_art/agent.py` — Strands agent with 4 `@tool` functions:
   - `geocode_location` — wraps geocoding client
   - `get_weather` — wraps weather client
-  - `get_scene_format` — dynamically provides full JSON schema (from Pydantic `model_json_schema()`), element type reference, weather-to-visual mapping guide, and color guidelines. This replaces embedding the schema in the system prompt.
-- System prompt is concise: instructs the agent to call `get_scene_format` first, then geocode/weather, then produce JSON
-- `generate_scene()` — creates fresh Agent per request, includes retry-on-failure logic
+  - `get_scene_format` — dynamically provides full JSON schema, 6 element types with preset-based particles, weather-to-visual mapping guide
+  - `validate_scene` — validates JSON against the Pydantic schema, enabling the agent to self-correct during its tool loop
+- System prompt instructs the agent to: get schema → geocode → weather → generate JSON → validate
+- `generate_scene()` — creates fresh Agent per request
 - `extract_json_from_response()` — strips markdown fences before parsing
-- `tests/test_agent.py` — 10 tests (JSON extraction variants, schema tool output, generate_scene with city/coords/style/retry)
+- `tests/unit/test_agent.py` — 13 tests (JSON extraction, schema tool output, generate_scene with city/coords/style, validate_scene success/error/fences)
 
 ### Phase 5 - Web UI & Flask Routes (commit `31686d7`)
 - `weather_art/routes.py` — Flask Blueprint with 3 endpoints:
@@ -51,30 +52,26 @@
 
 ### Test Reorganization (commit `32134e9`)
 - Moved all existing tests into `tests/unit/`
-- Added `tests/integration/` with live API tests for `geocode_city` and `get_current_weather`, marked with `@pytest.mark.integration`
+- Added `tests/integration/` with live API tests for `geocode_city`, `get_current_weather`, and `generate_scene`, marked with `@pytest.mark.integration`
 - Updated import paths in `test_routes.py`
+
+### Schema Simplification (commit `e78ff62`)
+- Removed `Circle`, `Triangle`, `Arc`, `ParticleRegion`, `Layer` models — reduced element types from 9 to 6
+- Merged Circle into Ellipse (equal width/height for circles)
+- Replaced nested `layers[]` with flat `elements[]` on Scene
+- Added 5 particle presets (rain, snow, fog, dust, stars) with `model_validator` to auto-fill complex params from preset name
+- Updated renderer (removed `_drawCircle`, `_drawTriangle`, `_drawArc`; flattened draw loop)
+- Rewrote agent `get_scene_format()` guide for simplified schema
+- Net reduction of 104 lines across the codebase
 
 ## Test Suite Status
 
-38 tests (36 unit + 2 integration), all passing, 97% coverage:
+49 tests (44 unit + 5 integration), all passing:
 ```
-uv run pytest tests/ -v --cov=weather_art
 uv run pytest tests/unit/ -v                # unit only
 uv run pytest -m integration -v             # integration only
+uv run pytest tests/ -v --cov=weather_art   # all + coverage
 ```
-
-Coverage breakdown:
-| Module | Coverage |
-|--------|----------|
-| `config.py` | 100% |
-| `geocoding.py` | 100% |
-| `weather.py` | 100% |
-| `scene_schema.py` | 100% |
-| `agent.py` | 92% |
-| `routes.py` | 91% |
-| **Total** | **97%** |
-
-Uncovered lines are error paths requiring a live Ollama instance (agent retry failure, catch-all route exceptions).
 
 ## All Phases Complete
 
