@@ -26,15 +26,10 @@ class WeatherArtRenderer {
 
   _draw(p) {
     this._drawBackground(p);
-    for (const layer of this.scene.layers || []) {
+    for (const element of this.scene.elements || []) {
       p.push();
-      const layerOpacity = layer.opacity !== undefined ? layer.opacity : 1.0;
-      for (const element of layer.elements || []) {
-        p.push();
-        const opacity = (element.opacity !== undefined ? element.opacity : 1.0) * layerOpacity;
-        this._drawElement(p, element, opacity);
-        p.pop();
-      }
+      const opacity = element.opacity !== undefined ? element.opacity : 1.0;
+      this._drawElement(p, element, opacity);
       p.pop();
     }
   }
@@ -75,9 +70,6 @@ class WeatherArtRenderer {
 
   _drawElement(p, element, opacity) {
     switch (element.type) {
-      case "circle":
-        this._drawCircle(p, element, opacity);
-        break;
       case "ellipse":
         this._drawEllipse(p, element, opacity);
         break;
@@ -86,12 +78,6 @@ class WeatherArtRenderer {
         break;
       case "line":
         this._drawLine(p, element, opacity);
-        break;
-      case "triangle":
-        this._drawTriangle(p, element, opacity);
-        break;
-      case "arc":
-        this._drawArc(p, element, opacity);
         break;
       case "text":
         this._drawText(p, element, opacity);
@@ -126,11 +112,6 @@ class WeatherArtRenderer {
     }
   }
 
-  _drawCircle(p, el, opacity) {
-    this._applyFillStroke(p, el, opacity);
-    p.circle(el.x, el.y, el.radius * 2);
-  }
-
   _drawEllipse(p, el, opacity) {
     this._applyFillStroke(p, el, opacity);
     p.ellipse(el.x, el.y, el.width, el.height);
@@ -154,18 +135,6 @@ class WeatherArtRenderer {
     p.stroke(c);
     p.strokeWeight(el.stroke_weight || el.strokeWeight || 1);
     p.line(el.x1, el.y1, el.x2, el.y2);
-  }
-
-  _drawTriangle(p, el, opacity) {
-    this._applyFillStroke(p, el, opacity);
-    p.triangle(el.x1, el.y1, el.x2, el.y2, el.x3, el.y3);
-  }
-
-  _drawArc(p, el, opacity) {
-    this._applyFillStroke(p, el, opacity);
-    const sw = el.stroke_weight || el.strokeWeight || 2;
-    p.strokeWeight(sw);
-    p.arc(el.x, el.y, el.width, el.height, el.start_angle || el.startAngle, el.stop_angle || el.stopAngle);
   }
 
   _drawText(p, el, opacity) {
@@ -194,24 +163,22 @@ class WeatherArtRenderer {
 
   _initParticles(p) {
     this.particles = [];
-    for (const layer of this.scene.layers || []) {
-      for (const element of layer.elements || []) {
-        if (element.type === "particle_system") {
-          const ps = [];
-          const region = element.region || { x: 0, y: 0, width: p.width, height: p.height };
-          const angleRad = p.radians(element.angle || 270);
-          const speed = element.speed || 2;
-          for (let i = 0; i < (element.count || 100); i++) {
-            ps.push({
-              x: region.x + p.random(region.width),
-              y: region.y + p.random(region.height),
-              vx: Math.cos(angleRad) * speed + (element.drift || 0) * p.random(-1, 1),
-              vy: Math.sin(angleRad) * speed,
-              size: element.size || 3,
-            });
-          }
-          this.particles.push({ element, particles: ps, region });
+    for (const element of this.scene.elements || []) {
+      if (element.type === "particle_system") {
+        const ps = [];
+        const region = { x: 0, y: 0, width: p.width, height: p.height };
+        const angleRad = p.radians(element.angle || 270);
+        const speed = element.speed || 2;
+        for (let i = 0; i < (element.count || 100); i++) {
+          ps.push({
+            x: region.x + p.random(region.width),
+            y: region.y + p.random(region.height),
+            vx: Math.cos(angleRad) * speed + (element.drift || 0) * p.random(-1, 1),
+            vy: Math.sin(angleRad) * speed,
+            size: element.size || 3,
+          });
         }
+        this.particles.push({ element, particles: ps, region });
       }
     }
   }

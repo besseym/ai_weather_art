@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 # --- Background types ---
@@ -26,17 +26,6 @@ Background = Annotated[
 
 # --- Element types ---
 
-class Circle(BaseModel):
-    type: Literal["circle"] = "circle"
-    x: float
-    y: float
-    radius: float
-    fill: str | None = None
-    stroke: str | None = None
-    stroke_weight: float = 1.0
-    opacity: float = 1.0
-
-
 class Ellipse(BaseModel):
     type: Literal["ellipse"] = "ellipse"
     x: float
@@ -45,6 +34,7 @@ class Ellipse(BaseModel):
     height: float
     fill: str | None = None
     stroke: str | None = None
+    stroke_weight: float = 1.0
     opacity: float = 1.0
 
 
@@ -71,33 +61,6 @@ class Line(BaseModel):
     opacity: float = 1.0
 
 
-class Triangle(BaseModel):
-    type: Literal["triangle"] = "triangle"
-    x1: float
-    y1: float
-    x2: float
-    y2: float
-    x3: float
-    y3: float
-    fill: str | None = None
-    stroke: str | None = None
-    opacity: float = 1.0
-
-
-class Arc(BaseModel):
-    type: Literal["arc"] = "arc"
-    x: float
-    y: float
-    width: float
-    height: float
-    start_angle: float
-    stop_angle: float
-    stroke: str = "#ffffff"
-    stroke_weight: float = 2.0
-    fill: str | None = None
-    opacity: float = 1.0
-
-
 class TextElement(BaseModel):
     type: Literal["text"] = "text"
     content: str
@@ -108,24 +71,79 @@ class TextElement(BaseModel):
     opacity: float = 1.0
 
 
-class ParticleRegion(BaseModel):
-    x: float = 0.0
-    y: float = 0.0
-    width: float = 800.0
-    height: float = 600.0
+# --- Particle presets ---
+
+PARTICLE_PRESETS: dict[str, dict] = {
+    "rain": {
+        "particle_shape": "line",
+        "count": 200,
+        "speed": 5.0,
+        "angle": 260.0,
+        "drift": 0.5,
+        "size": 4.0,
+        "opacity": 0.6,
+    },
+    "snow": {
+        "particle_shape": "circle",
+        "count": 150,
+        "speed": 1.5,
+        "angle": 270.0,
+        "drift": 1.5,
+        "size": 4.0,
+        "opacity": 0.8,
+    },
+    "fog": {
+        "particle_shape": "circle",
+        "count": 80,
+        "speed": 0.5,
+        "angle": 180.0,
+        "drift": 0.0,
+        "size": 20.0,
+        "opacity": 0.3,
+    },
+    "dust": {
+        "particle_shape": "circle",
+        "count": 50,
+        "speed": 1.0,
+        "angle": 200.0,
+        "drift": 2.0,
+        "size": 2.0,
+        "opacity": 0.5,
+    },
+    "stars": {
+        "particle_shape": "circle",
+        "count": 100,
+        "speed": 0.0,
+        "angle": 0.0,
+        "drift": 0.0,
+        "size": 2.0,
+        "opacity": 0.9,
+    },
+}
 
 
 class ParticleSystem(BaseModel):
     type: Literal["particle_system"] = "particle_system"
-    particle_shape: Literal["circle", "line", "rect"] = "circle"
-    count: int = Field(default=100, ge=1, le=1000)
-    region: ParticleRegion = Field(default_factory=ParticleRegion)
-    speed: float = 2.0
-    angle: float = 270.0
-    drift: float = 0.0
-    size: float = 3.0
+    preset: Literal["rain", "snow", "fog", "dust", "stars"]
     color: str = "#ffffff"
-    opacity: float = 1.0
+    count: int | None = Field(default=None, ge=1, le=1000)
+    opacity: float | None = None
+    speed: float | None = None
+    particle_shape: Literal["circle", "line", "rect"] | None = None
+    angle: float | None = None
+    drift: float | None = None
+    size: float | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def apply_preset(cls, values: dict) -> dict:
+        preset_name = values.get("preset")
+        if preset_name and preset_name in PARTICLE_PRESETS:
+            defaults = PARTICLE_PRESETS[preset_name]
+            for key, default_val in defaults.items():
+                if values.get(key) is None:
+                    values[key] = default_val
+        return values
 
 
 class Glow(BaseModel):
@@ -138,7 +156,7 @@ class Glow(BaseModel):
 
 
 Element = Annotated[
-    Union[Circle, Ellipse, Rect, Line, Triangle, Arc, TextElement, ParticleSystem, Glow],
+    Union[Ellipse, Rect, Line, TextElement, ParticleSystem, Glow],
     Field(discriminator="type"),
 ]
 
@@ -155,16 +173,10 @@ class Metadata(BaseModel):
     weather_summary: str = ""
 
 
-class Layer(BaseModel):
-    id: str
-    opacity: float = 1.0
-    elements: list[Element] = Field(default_factory=list)
-
-
 class Scene(BaseModel):
     canvas: Canvas = Field(default_factory=Canvas)
     background: Background = Field(default_factory=lambda: SolidBackground(color="#000000"))
-    layers: list[Layer] = Field(default_factory=list)
+    elements: list[Element] = Field(default_factory=list)
     metadata: Metadata = Field(default_factory=Metadata)
 
 

@@ -12,111 +12,16 @@ VALID_SCENE = {
             "colors": ["#1a1a2e", "#0f3460"],
             "direction": "vertical",
         },
-        "layers": [
-            {
-                "id": "sky",
-                "opacity": 1.0,
-                "elements": [
-                    {
-                        "type": "glow",
-                        "x": 650,
-                        "y": 100,
-                        "radius": 120,
-                        "color": "#FFD700",
-                        "intensity": 0.6,
-                    },
-                    {
-                        "type": "circle",
-                        "x": 650,
-                        "y": 100,
-                        "radius": 40,
-                        "fill": "#FFD700",
-                        "opacity": 1.0,
-                    },
-                    {
-                        "type": "ellipse",
-                        "x": 300,
-                        "y": 150,
-                        "width": 180,
-                        "height": 60,
-                        "fill": "#cccccc",
-                        "opacity": 0.7,
-                    },
-                ],
-            },
-            {
-                "id": "weather",
-                "opacity": 0.8,
-                "elements": [
-                    {
-                        "type": "particle_system",
-                        "particle_shape": "line",
-                        "count": 200,
-                        "region": {"x": 0, "y": 0, "width": 800, "height": 600},
-                        "speed": 4.0,
-                        "angle": 260,
-                        "drift": 0.5,
-                        "size": 5,
-                        "color": "#aaccff",
-                        "opacity": 0.6,
-                    }
-                ],
-            },
-            {
-                "id": "ground",
-                "elements": [
-                    {
-                        "type": "rect",
-                        "x": 0,
-                        "y": 500,
-                        "width": 800,
-                        "height": 100,
-                        "fill": "#2d4a2d",
-                    },
-                    {
-                        "type": "triangle",
-                        "x1": 100,
-                        "y1": 500,
-                        "x2": 150,
-                        "y2": 400,
-                        "x3": 200,
-                        "y3": 500,
-                        "fill": "#1a3a1a",
-                    },
-                    {
-                        "type": "line",
-                        "x1": 400,
-                        "y1": 200,
-                        "x2": 420,
-                        "y2": 350,
-                        "stroke": "#ffffff",
-                        "stroke_weight": 3,
-                    },
-                    {
-                        "type": "arc",
-                        "x": 400,
-                        "y": 300,
-                        "width": 200,
-                        "height": 100,
-                        "start_angle": 3.14,
-                        "stop_angle": 6.28,
-                        "stroke": "#ff0000",
-                    },
-                    {
-                        "type": "text",
-                        "content": "Rainy Day",
-                        "x": 10,
-                        "y": 30,
-                        "size": 20,
-                        "fill": "#ffffff",
-                    },
-                ],
-            },
+        "elements": [
+            {"type": "glow", "x": 650, "y": 100, "radius": 120, "color": "#FFD700", "intensity": 0.6},
+            {"type": "ellipse", "x": 650, "y": 100, "width": 80, "height": 80, "fill": "#FFD700"},
+            {"type": "ellipse", "x": 300, "y": 150, "width": 180, "height": 60, "fill": "#cccccc", "opacity": 0.7},
+            {"type": "particle_system", "preset": "rain", "color": "#aaccff", "opacity": 0.6},
+            {"type": "rect", "x": 0, "y": 500, "width": 800, "height": 100, "fill": "#2d4a2d"},
+            {"type": "line", "x1": 400, "y1": 200, "x2": 420, "y2": 350, "stroke": "#ffffff", "stroke_weight": 3},
+            {"type": "text", "content": "Rainy Day", "x": 10, "y": 30, "size": 20, "fill": "#ffffff"},
         ],
-        "metadata": {
-            "title": "Rainy Evening",
-            "weather_summary": "Rain, 8C, wind 25km/h",
-        },
+        "metadata": {"title": "Rainy Evening", "weather_summary": "Rain, 8C, wind 25km/h"},
     }
 }
 
@@ -125,65 +30,113 @@ def test_valid_full_scene():
     response = SceneResponse.model_validate(VALID_SCENE)
     assert response.scene.canvas.width == 800
     assert response.scene.background.type == "gradient"
-    assert len(response.scene.layers) == 3
+    assert len(response.scene.elements) == 7
     assert response.scene.metadata.title == "Rainy Evening"
 
 
 def test_valid_minimal_scene():
-    minimal = {"scene": {"layers": []}}
+    minimal = {"scene": {"elements": []}}
     response = SceneResponse.model_validate(minimal)
     assert response.scene.canvas.width == 800
-    assert response.scene.canvas.height == 600
-    assert len(response.scene.layers) == 0
+    assert len(response.scene.elements) == 0
 
 
 def test_solid_background():
-    data = {
-        "scene": {
-            "background": {"type": "solid", "color": "#000000"},
-            "layers": [],
-        }
-    }
+    data = {"scene": {"background": {"type": "solid", "color": "#ff0000"}, "elements": []}}
     response = SceneResponse.model_validate(data)
     assert response.scene.background.type == "solid"
-    assert response.scene.background.color == "#000000"
+    assert response.scene.background.color == "#ff0000"
 
 
 def test_all_element_types_parsed():
     response = SceneResponse.model_validate(VALID_SCENE)
-    all_elements = []
-    for layer in response.scene.layers:
-        all_elements.extend(layer.elements)
-    types = {e.type for e in all_elements}
-    assert types == {"glow", "circle", "ellipse", "particle_system", "rect", "triangle", "line", "arc", "text"}
+    types = {e.type for e in response.scene.elements}
+    assert types == {"glow", "ellipse", "particle_system", "rect", "line", "text"}
 
 
-def test_particle_system_defaults():
+def test_ellipse_as_circle():
+    """Ellipse with equal width/height replaces the old circle type."""
     data = {
         "scene": {
-            "layers": [
-                {
-                    "id": "rain",
-                    "elements": [{"type": "particle_system"}],
-                }
+            "elements": [
+                {"type": "ellipse", "x": 100, "y": 100, "width": 80, "height": 80, "fill": "#FFD700"}
             ]
         }
     }
     response = SceneResponse.model_validate(data)
-    ps = response.scene.layers[0].elements[0]
-    assert ps.count == 100
-    assert ps.speed == 2.0
+    el = response.scene.elements[0]
+    assert el.type == "ellipse"
+    assert el.width == el.height == 80
+
+
+def test_particle_system_preset_rain():
+    data = {
+        "scene": {
+            "elements": [
+                {"type": "particle_system", "preset": "rain", "color": "#aabbcc"}
+            ]
+        }
+    }
+    response = SceneResponse.model_validate(data)
+    ps = response.scene.elements[0]
+    assert ps.preset == "rain"
+    assert ps.particle_shape == "line"
+    assert ps.count == 200
+    assert ps.speed == 5.0
+    assert ps.angle == 260.0
+    assert ps.color == "#aabbcc"
+
+
+def test_particle_system_preset_snow():
+    data = {
+        "scene": {
+            "elements": [
+                {"type": "particle_system", "preset": "snow", "color": "#ffffff"}
+            ]
+        }
+    }
+    response = SceneResponse.model_validate(data)
+    ps = response.scene.elements[0]
+    assert ps.particle_shape == "circle"
+    assert ps.speed == 1.5
+    assert ps.drift == 1.5
+
+
+def test_particle_system_preset_with_override():
+    data = {
+        "scene": {
+            "elements": [
+                {"type": "particle_system", "preset": "rain", "color": "#ff0000", "count": 50, "speed": 10.0}
+            ]
+        }
+    }
+    response = SceneResponse.model_validate(data)
+    ps = response.scene.elements[0]
+    assert ps.count == 50
+    assert ps.speed == 10.0
+    assert ps.angle == 260.0
+    assert ps.particle_shape == "line"
+
+
+def test_particle_system_preset_stars():
+    data = {
+        "scene": {
+            "elements": [
+                {"type": "particle_system", "preset": "stars", "color": "#ffffcc"}
+            ]
+        }
+    }
+    response = SceneResponse.model_validate(data)
+    ps = response.scene.elements[0]
+    assert ps.speed == 0.0
     assert ps.particle_shape == "circle"
 
 
 def test_particle_count_too_high():
     data = {
         "scene": {
-            "layers": [
-                {
-                    "id": "rain",
-                    "elements": [{"type": "particle_system", "count": 5000}],
-                }
+            "elements": [
+                {"type": "particle_system", "preset": "rain", "color": "#fff", "count": 5000}
             ]
         }
     }
@@ -197,26 +150,20 @@ def test_missing_scene_key():
 
 
 def test_invalid_element_type():
-    data = {
-        "scene": {
-            "layers": [
-                {
-                    "id": "bad",
-                    "elements": [{"type": "hexagon", "x": 0, "y": 0}],
-                }
-            ]
-        }
-    }
+    data = {"scene": {"elements": [{"type": "hexagon", "x": 0, "y": 0}]}}
     with pytest.raises(ValidationError):
         SceneResponse.model_validate(data)
 
 
+def test_removed_types_rejected():
+    """circle, triangle, arc are no longer valid element types."""
+    for removed_type in ["circle", "triangle", "arc"]:
+        data = {"scene": {"elements": [{"type": removed_type, "x": 0, "y": 0}]}}
+        with pytest.raises(ValidationError):
+            SceneResponse.model_validate(data)
+
+
 def test_gradient_needs_at_least_two_colors():
-    data = {
-        "scene": {
-            "background": {"type": "gradient", "colors": ["#000"]},
-            "layers": [],
-        }
-    }
+    data = {"scene": {"background": {"type": "gradient", "colors": ["#000"]}, "elements": []}}
     with pytest.raises(ValidationError):
         SceneResponse.model_validate(data)

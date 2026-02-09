@@ -63,7 +63,7 @@ Return a JSON object with this top-level shape:
   "scene": {{
     "canvas": {{"width": 800, "height": 600}},
     "background": <background>,
-    "layers": [<layer>, ...],
+    "elements": [<element>, ...],
     "metadata": {{"title": "<short title>", "weather_summary": "<conditions summary>"}}
   }}
 }}
@@ -72,51 +72,48 @@ Return a JSON object with this top-level shape:
 - Solid: {{"type": "solid", "color": "#hex"}}
 - Gradient: {{"type": "gradient", "colors": ["#hex1", "#hex2"], "direction": "vertical"|"horizontal"}}
 
-### Layers
-Each layer: {{"id": "<name>", "opacity": 0.0-1.0, "elements": [<element>, ...]}}
-Use 2-4 layers to organize the scene (e.g. sky, weather_effects, ground, foreground).
+### Elements
+A flat list of elements rendered in order (first = back, last = front).
+Organize visually by ordering: background shapes first, then weather effects, then foreground.
 
-### 9 Element Types
+### 6 Element Types
 
-1. circle — Sun, moon, dots
-   {{"type": "circle", "x": N, "y": N, "radius": N, "fill": "#hex", "stroke": "#hex", "opacity": 0-1}}
+1. ellipse — Sun, moon, clouds, dots (use equal width & height for circles)
+   {{"type": "ellipse", "x": N, "y": N, "width": N, "height": N, "fill": "#hex", "stroke": "#hex", "stroke_weight": N, "opacity": 0-1}}
 
-2. ellipse — Clouds, puddles
-   {{"type": "ellipse", "x": N, "y": N, "width": N, "height": N, "fill": "#hex", "opacity": 0-1}}
-
-3. rect — Ground, buildings, sky bands
+2. rect — Ground, buildings, sky bands
    {{"type": "rect", "x": N, "y": N, "width": N, "height": N, "fill": "#hex", "corner_radius": N, "opacity": 0-1}}
 
-4. line — Lightning bolts, streaks
+3. line — Lightning bolts, streaks
    {{"type": "line", "x1": N, "y1": N, "x2": N, "y2": N, "stroke": "#hex", "stroke_weight": N, "opacity": 0-1}}
 
-5. triangle — Mountains, trees, rooftops
-   {{"type": "triangle", "x1": N, "y1": N, "x2": N, "y2": N, "x3": N, "y3": N, "fill": "#hex", "opacity": 0-1}}
-
-6. arc — Rainbows, curved shapes
-   {{"type": "arc", "x": N, "y": N, "width": N, "height": N, "start_angle": radians, "stop_angle": radians, "stroke": "#hex", "opacity": 0-1}}
-
-7. text — Labels, temperature display
+4. text — Labels, temperature display
    {{"type": "text", "content": "string", "x": N, "y": N, "size": N, "fill": "#hex", "opacity": 0-1}}
 
-8. particle_system — Rain, snow, fog, dust (ANIMATED — the renderer handles movement)
-   {{"type": "particle_system", "particle_shape": "circle"|"line"|"rect", "count": 1-1000, \
-"region": {{"x": N, "y": N, "width": N, "height": N}}, "speed": N, "angle": degrees, \
-"drift": N, "size": N, "color": "#hex", "opacity": 0-1}}
+5. particle_system — Rain, snow, fog, dust, stars (ANIMATED)
+   Use a preset name. The renderer handles all movement automatically.
+   {{"type": "particle_system", "preset": "rain"|"snow"|"fog"|"dust"|"stars", "color": "#hex"}}
+   - Only "preset" and "color" are required. Optional overrides: "count", "opacity", "speed".
+   - Preset defaults:
+     rain  — line particles falling at angle, fast (speed 5, count 200)
+     snow  — circle particles drifting down slowly (speed 1.5, count 150)
+     fog   — large translucent circles drifting sideways (speed 0.5, count 80, opacity 0.3)
+     dust  — tiny circles drifting at an angle (speed 1, count 50)
+     stars — static circle particles (speed 0, count 100)
 
-9. glow — Sun glow, moon halo, light sources
+6. glow — Sun glow, moon halo, light sources
    {{"type": "glow", "x": N, "y": N, "radius": N, "color": "#hex", "intensity": 0-1}}
 
 ## Weather-to-Visual Mapping Guide
 
-- Clear day: bright gradient (#87CEEB to #4682B4), sun circle + glow, maybe a few clouds
-- Clear night: dark gradient (#0a0a2e to #1a1a3e), moon circle + glow, star circles
-- Rain: grey gradient, dark clouds (ellipses), particle_system with shape "line", angle ~260, speed 4-6
-- Snow: blue-grey gradient, particle_system with shape "circle", angle ~270, speed 1-2, drift 1-2
-- Fog: muted gradient, particle_system with shape "circle", large size, low speed, high count, low opacity
-- Thunderstorm: very dark gradient, line elements for lightning, rain particles, dark clouds
+- Clear day: bright gradient (#87CEEB to #4682B4), sun ellipse (equal w/h) + glow, maybe a few cloud ellipses
+- Clear night: dark gradient (#0a0a2e to #1a1a3e), moon ellipse + glow, particle_system preset "stars"
+- Rain: grey gradient, dark cloud ellipses, particle_system preset "rain"
+- Snow: blue-grey gradient, particle_system preset "snow"
+- Fog: muted gradient, particle_system preset "fog"
+- Thunderstorm: very dark gradient, line elements for lightning, particle_system preset "rain" with high count
 - Cloudy: grey gradient, multiple cloud ellipses at various positions and opacities
-- Windy: use drift on particles, angled elements suggesting motion
+- Windy: particle_system preset "dust", or "rain"/"snow" with higher speed override
 
 ## Color Guidelines
 - Use hex colors only (e.g. "#FF6B35")
@@ -129,7 +126,8 @@ Use 2-4 layers to organize the scene (e.g. sky, weather_effects, ground, foregro
 - All coordinates must be within the canvas bounds
 - Use particle_system for any weather precipitation or atmospheric effects
 - Include at least one glow element for sun or moon
-- Keep total element count reasonable (under 30 elements across all layers)
+- Keep total element count reasonable (under 30 elements)
+- Order elements back-to-front (background shapes first, foreground last)
 """
     return {"status": "success", "content": [{"text": guide}]}
 

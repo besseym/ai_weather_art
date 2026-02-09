@@ -7,31 +7,14 @@ SAMPLE_SCENE = {
     "scene": {
         "canvas": {"width": 800, "height": 600},
         "background": {"type": "gradient", "colors": ["#1a1a2e", "#0f3460"], "direction": "vertical"},
-        "layers": [
+        "elements": [
+            {"type": "glow", "x": 650, "y": 100, "radius": 120, "color": "#FFD700", "intensity": 0.6},
+            {"type": "ellipse", "x": 650, "y": 100, "width": 80, "height": 80, "fill": "#FFD700"},
             {
-                "id": "sky",
-                "opacity": 1.0,
-                "elements": [
-                    {"type": "glow", "x": 650, "y": 100, "radius": 120, "color": "#FFD700", "intensity": 0.6},
-                    {"type": "circle", "x": 650, "y": 100, "radius": 40, "fill": "#FFD700"},
-                ],
-            },
-            {
-                "id": "weather",
-                "opacity": 0.8,
-                "elements": [
-                    {
-                        "type": "particle_system",
-                        "particle_shape": "line",
-                        "count": 200,
-                        "region": {"x": 0, "y": 0, "width": 800, "height": 600},
-                        "speed": 5.0,
-                        "angle": 260,
-                        "size": 4,
-                        "color": "#aaccee",
-                        "opacity": 0.6,
-                    }
-                ],
+                "type": "particle_system",
+                "preset": "rain",
+                "color": "#aaccee",
+                "opacity": 0.6,
             },
         ],
         "metadata": {"title": "Rainy Evening", "weather_summary": "Rain, 8C, wind 25km/h"},

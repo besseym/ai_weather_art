@@ -10,18 +10,13 @@ def test_generate_scene_with_city():
     """End-to-end: city name -> agent -> validated scene JSON."""
     result = generate_scene("Berlin")
 
-    # Must pass Pydantic validation
     validated = SceneResponse.model_validate(result)
     scene = validated.scene
 
     assert scene.canvas.width == 800
     assert scene.canvas.height == 600
-    assert len(scene.layers) > 0
+    assert len(scene.elements) > 0
     assert scene.metadata.title != ""
-
-    # Should have at least one element across all layers
-    total_elements = sum(len(layer.elements) for layer in scene.layers)
-    assert total_elements > 0
 
 
 def test_generate_scene_with_coords():
@@ -31,9 +26,7 @@ def test_generate_scene_with_coords():
     validated = SceneResponse.model_validate(result)
     scene = validated.scene
 
-    assert len(scene.layers) > 0
-    total_elements = sum(len(layer.elements) for layer in scene.layers)
-    assert total_elements > 0
+    assert len(scene.elements) > 0
 
 
 def test_generate_scene_with_style_prompt():
@@ -43,5 +36,5 @@ def test_generate_scene_with_style_prompt():
     validated = SceneResponse.model_validate(result)
     scene = validated.scene
 
-    assert len(scene.layers) > 0
+    assert len(scene.elements) > 0
     assert scene.metadata.weather_summary != ""

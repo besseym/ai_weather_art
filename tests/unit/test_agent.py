@@ -15,15 +15,9 @@ VALID_SCENE_JSON = json.dumps({
     "scene": {
         "canvas": {"width": 800, "height": 600},
         "background": {"type": "solid", "color": "#87CEEB"},
-        "layers": [
-            {
-                "id": "sky",
-                "opacity": 1.0,
-                "elements": [
-                    {"type": "glow", "x": 650, "y": 100, "radius": 120, "color": "#FFD700", "intensity": 0.6},
-                    {"type": "circle", "x": 650, "y": 100, "radius": 40, "fill": "#FFD700"},
-                ],
-            }
+        "elements": [
+            {"type": "glow", "x": 650, "y": 100, "radius": 120, "color": "#FFD700", "intensity": 0.6},
+            {"type": "ellipse", "x": 650, "y": 100, "width": 80, "height": 80, "fill": "#FFD700"},
         ],
         "metadata": {"title": "Sunny Day", "weather_summary": "Clear, 22C"},
     }
@@ -62,7 +56,9 @@ class TestGetSceneFormat:
         text = result["content"][0]["text"]
         assert "particle_system" in text
         assert "glow" in text
-        assert "circle" in text
+        assert "ellipse" in text
+        assert "preset" in text
+        assert "6 Element Types" in text
         assert "Weather-to-Visual" in text
 
 
@@ -125,7 +121,7 @@ class TestValidateScene:
         assert "Validation failed" in result["content"][0]["text"]
 
     def test_validate_scene_bad_schema(self):
-        result = validate_scene('{"scene": {"layers": [{"id": "x", "elements": [{"type": "bogus"}]}]}}')
+        result = validate_scene('{"scene": {"elements": [{"type": "bogus"}]}}')
         assert result["status"] == "error"
         assert "Validation failed" in result["content"][0]["text"]
 
