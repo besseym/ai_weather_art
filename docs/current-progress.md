@@ -1,7 +1,7 @@
 # Current Development Progress
 
 **Last updated:** 2026-02-08
-**Current branch:** `phase6`
+**Current branch:** `phase7`
 
 ## Completed Phases
 
@@ -49,11 +49,18 @@
 - `.dockerignore` — refined to exclude `.pytest_cache`, `*.pyc`, `docs/`, `tests/`, `.gitignore` for leaner Docker images
 - Items already completed in earlier phases: retry logic on JSON parse failure (`agent.py`, Phase 4), unknown element type handling with console warning (`renderer.js`, Phase 3), shared test fixtures (`conftest.py`, Phase 5), pytest `integration` marker (`pyproject.toml`, Phase 1)
 
+### Test Reorganization (commit `32134e9`)
+- Moved all existing tests into `tests/unit/`
+- Added `tests/integration/` with live API tests for `geocode_city` and `get_current_weather`, marked with `@pytest.mark.integration`
+- Updated import paths in `test_routes.py`
+
 ## Test Suite Status
 
-36 tests, all passing, 97% coverage:
+38 tests (36 unit + 2 integration), all passing, 97% coverage:
 ```
 uv run pytest tests/ -v --cov=weather_art
+uv run pytest tests/unit/ -v                # unit only
+uv run pytest -m integration -v             # integration only
 ```
 
 Coverage breakdown:

@@ -11,7 +11,9 @@ AI Weather Art is a web application that uses an AI agent (Strands/Ollama with L
 - **Install dependencies**: `uv sync`
 - **Run dev server**: `uv run flask --app app run --debug`
 - **Run all tests**: `uv run pytest tests/ -v --cov=weather_art`
-- **Run a single test file**: `uv run pytest tests/test_weather.py -v`
+- **Run unit tests only**: `uv run pytest tests/unit/ -v`
+- **Run integration tests only**: `uv run pytest -m integration -v`
+- **Run a single test file**: `uv run pytest tests/unit/test_weather.py -v`
 - **Docker build & run**: `docker compose up --build`
 
 ## Architecture
