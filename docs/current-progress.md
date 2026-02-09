@@ -1,7 +1,7 @@
 # Current Development Progress
 
 **Last updated:** 2026-02-08
-**Current branch:** `phase8`
+**Current branch:** `phase9`
 
 ## Completed Phases
 
@@ -64,9 +64,13 @@
 - Rewrote agent `get_scene_format()` guide for simplified schema
 - Net reduction of 104 lines across the codebase
 
+### Weather Description Agent (commit `8340510`)
+- `weather_art/weather_agent.py` — standalone `describe_weather(user_message)` function that creates a Strands agent with `geocode_location` and `get_weather` tools (reused from `agent.py`) to return a 2-4 sentence natural-language weather description
+- `tests/integration/test_weather_agent.py` — 2 integration tests (by city name, by coordinates)
+
 ## Test Suite Status
 
-49 tests (44 unit + 5 integration), all passing:
+51 tests (44 unit + 7 integration), all passing:
 ```
 uv run pytest tests/unit/ -v                # unit only
 uv run pytest -m integration -v             # integration only
