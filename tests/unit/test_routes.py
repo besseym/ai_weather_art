@@ -1,7 +1,7 @@
 import json
 from unittest.mock import patch
 
-from tests.conftest import SAMPLE_SCENE, SAMPLE_GEOCODE_RESULT
+from tests.unit.conftest import SAMPLE_SCENE, SAMPLE_GEOCODE_RESULT
 
 
 class TestIndex:
